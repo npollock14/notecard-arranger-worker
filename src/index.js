@@ -8,9 +8,29 @@ addEventListener('fetch', event => {
  * @param {Request} request
  */
 async function handleRequest(request) {
+  let parsedRequest = new URL(request.url)
+  let setNumber = parsedRequest.searchParams.get('setNumber')
+  if (!setNumber) {
+    return new Response(
+      'No set number provided\nAppend `?setNumber=` to the url with a proper set number\nEx: URL `https://www.easynotecards.com/notecard_set/88846` would be `?setNumber=88846`',
+      {
+        status: 400,
+        statusText: 'Bad Request',
+      },
+    )
+  }
   const raw_res = await fetch(
-    'https://www.easynotecards.com/notecard_set/88846',
+    'https://www.easynotecards.com/notecard_set/' + setNumber,
   )
+  if (raw_res.status !== 200) {
+    return new Response(
+      'Set not found\nAppend `?setNumber=` to the url with a proper set number\nEx: URL `https://www.easynotecards.com/notecard_set/88846` would be `?setNumber=88846`',
+      {
+        status: 404,
+        statusText: 'Not Found',
+      },
+    )
+  }
   const html = await raw_res.text()
   const $ = cheerio.load(html)
   let text = $('p')
@@ -35,7 +55,7 @@ async function handleRequest(request) {
     return a.split(' ')[1].localeCompare(b.split(' ')[1])
   })
 
-  let finalText = split_text.join('\n')
+  let finalText = split_text.join('\n==========================\n')
 
   return new Response(finalText, {
     headers: { 'content-type': 'text/plain' },
